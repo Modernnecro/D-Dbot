@@ -43,7 +43,7 @@ def find(predicate, iterable):
 def win1252_to_utf8(string):
     return string.encode('windows-1252').decode('utf-8')
 
-@bot.command(usage='(spell name)')
+@bot.command(usage='(spell name)', aliases=('spells', 'magic'))
 async def spell(ctx, *, msg = None):
     """
     Shows basic information on Spells.
@@ -63,7 +63,7 @@ async def spell(ctx, *, msg = None):
         embed = discord.Embed(
             title=data2['name'],
             description=win1252_to_utf8(''.join(data2['desc'])),
-            color=0xff0505
+            color=0xaa44ff
         )
 
         if 'higher_level' in data2:
@@ -76,7 +76,7 @@ async def spell(ctx, *, msg = None):
 
         await ctx.send(embed=embed)
 
-@bot.command(usage='(class name)')
+@bot.command(usage='(class name)', aliases=('class', 'style'))
 async def classes(ctx, *, msg = None):
     """
     Shows basic info on the classes of Dungeons And Dragons
@@ -91,11 +91,64 @@ async def classes(ctx, *, msg = None):
         await ctx.send('Please use a real class, one from the Dungeons and Dragons Player Handbook')
     else:
         data2 = requests.get(classes['url']).json()
+        #pprint.pprint(data2)
 
         embed = discord.Embed(
             title=data2['name'],
             #description=win1252_to_utf8(''.join(data2['subclasses'])),
-            color=0xff0505
+            url='http://www.dandwiki.com/wiki/5e_SRD:' + msg,
+            color=0xff6767
+        )
+        if 'hit_die' in data2:
+            embed.add_field(
+                name='Hit Die',
+                value=data2['hit_die'])
+            pass
+        if 'proficiencies' in data2:
+            proficiencies = data2['proficiencies']
+            proficiencies = '\n'.join(sorted('• ' + proficiency['name'] for proficiency in proficiencies))
+            embed.add_field(
+                name='proficiencies',
+                value=proficiencies
+            )
+            pass
+        if 'proficiency_choices' in data2:
+            proficiencies = data2['proficiency_choices']
+            from_list = proficiencies[0]['from']
+            from_list = '\n'.join('• ' + item['name'].replace('Skill: ', '') for item in from_list)
+            embed.add_field(
+                name='Skill Choices',
+                value=from_list
+            )
+        if 'saving_throws' in data2:
+            throw = data2['saving_throws']
+            throw = ', '.join(throws['name'].replace('Skill: ', '') for throws in throw)
+            embed.add_field(
+                name='Skill Choices',
+                value=throw
+            )
+        await ctx.send(embed=embed)
+
+@bot.command(usage='(monster name)', aliases=('monsters', 'baddies'))
+async def monster(ctx, *, msg = None):
+    """
+    Shows basic information of Monsters of the Monster Manual.
+    """
+    if msg is None:
+        await ctx.send('Please give the name of a monster.')
+    data = requests.get('http://www.dnd5eapi.co/api/monsters').json()
+
+    monsters = find(lambda monsters: monsters['name'] == msg, data['results'])
+
+    if monsters is None:
+        await ctx.send('Please use the name of a monster.')
+    else:
+        data2 = requests.get(monsters['url']).json()
+
+        embed=discord.Embed(
+            title=data2['name'],
+            description= 'Challenge Rating: ' + str(data2['challenge_rating']),
+            color=0xff7777
         )
         await ctx.send(embed=embed)
 
