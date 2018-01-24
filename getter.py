@@ -10,6 +10,22 @@ from discord.ext import commands
 import discord.utils as utils
 import requests
 
+def ellipses(text: str, max_length: int):
+    """
+    Takes text as input, and returns it as long as it is less than
+    max_length. If it is over this, then ellipses are placed over the last
+    three characters and the substring from the start to the boundary is
+    returned.
+
+    This makes arbitrarily long text blocks safe to place in messages and
+    embeds.
+    """
+    if len(text) > max_length:
+        ellipse = '...'
+        return text[0:max_length - len(ellipse)] + ellipse
+    else:
+        return text
+
 logging.basicConfig(level='INFO')
 
 class Dungeonbot(commands.Bot):
@@ -60,10 +76,13 @@ async def spell(ctx, *, msg = None):
     else:
         data2 = requests.get(spell['url']).json()
 
+        descript = descript = ellipses(win1252_to_utf8(''.join(data2['desc'])), 2048)
+
         embed = discord.Embed(
             title=data2['name'],
-            description=win1252_to_utf8(''.join(data2['desc'])),
-            color=0xaa44ff
+            description= descript,
+            color=0xaa44ff,
+            url='http://www.dandwiki.com/wiki/SRD:' + msg.replace(' ', '_')
         )
 
         if 'higher_level' in data2:
@@ -71,9 +90,6 @@ async def spell(ctx, *, msg = None):
                 name='Higher Level',
                 value=win1252_to_utf8(' '.join(data2['higher_level']))
             )
-            pass
-
-
         await ctx.send(embed=embed)
 
 @bot.command(usage='(class name)', aliases=('class', 'style'))
@@ -97,7 +113,7 @@ async def classes(ctx, *, msg = None):
             title=data2['name'],
             #description=win1252_to_utf8(''.join(data2['subclasses'])),
             url='http://www.dandwiki.com/wiki/5e_SRD:' + msg,
-            color=0xff6767
+            color=0x6767ff
         )
         if 'hit_die' in data2:
             embed.add_field(
@@ -127,6 +143,13 @@ async def classes(ctx, *, msg = None):
                 name='Skill Choices',
                 value=throw
             )
+        if 'subclasses' in data2:
+            subclasses = data2['subclasses']
+            subclasses = '\n'.join(sorted('• ' + subclass['name'] for subclass in subclasses))
+            embed.add_field(
+                name='Subclasses',
+                value=subclasses
+            )
         await ctx.send(embed=embed)
 
 @bot.command(usage='(monster name)', aliases=('monsters', 'baddies'))
@@ -147,8 +170,76 @@ async def monster(ctx, *, msg = None):
 
         embed=discord.Embed(
             title=data2['name'],
-            description= 'Challenge Rating: ' + str(data2['challenge_rating']),
+            url='http://www.dandwiki.com/wiki/5e_SRD:' + msg.replace(' ', '_'),
             color=0xff7777
+        )
+        if 'hit_points' in data2:
+            embed.add_field(
+                name='Hitpoints',
+                value=data2['hit_points'])
+        if 'armor_class' in data2:
+            embed.add_field(
+                name='Armor Class',
+                value=data2['armor_class']
+            )
+        if 'challenge_rating' in data2:
+            embed.add_field(
+                name='Challenge Rating',
+                value=data2['challenge_rating']
+            )
+        if 'special_abilities' in data2:
+            abilities = data2['special_abilities']
+            abilities = '\n'.join(sorted('• ' + ability['name'] for ability in abilities))
+            embed.add_field(
+                name='Special Abilities',
+                value=abilities,
+                inline=False
+            )
+        if 'actions' in data2:
+            actions = data2['actions']
+            actions = '\n'.join(sorted('• ' + action['name'] for action in actions))
+            embed.add_field(
+                name='Actions',
+                value=actions
+            )
+        if 'legendary_actions' in data2:
+            actions = data2['legendary_actions']
+            actions = '\n'.join(sorted('• ' + action['name'] for action in actions))
+            embed.add_field(
+                name='Legendary Actions',
+                value=actions
+            )
+        await ctx.send(embed=embed)
+
+@bot.command(usage='(condition)', aliases=('status', 'statusses'))
+async def condition(ctx, *, msg = None):
+    """
+    Shows what a certain condition does in Dungeons And Dragons.
+    """
+    if msg is None:
+        await ctx.send('Please give the name of a condition.')
+    data = requests.get('http://www.dnd5eapi.co/api/conditions').json()
+
+    conditions = find(lambda conditions: conditions['name'] == msg, data['results'])
+
+    if conditions is None:
+        await ctx.send('Please use the name of a condition.')
+    else:
+        data2 = requests.get(conditions['url']).json()
+
+        if 'desc' in data2:
+            descript = 'W.I.P.'
+            for element in data2['desc']:
+                descript = '\n'.join(desc['name'] for desc in descript)
+        else:
+            descript = data2['desc']
+            descript = '\n'.join(desc['name'] for desc in descript)
+
+        embed=discord.Embed(
+            title=data2['name'],
+            description= descript,
+            url='http://www.dandwiki.com/wiki/' + msg.replace(' ', '_'),
+            color=0x999955
         )
         await ctx.send(embed=embed)
 
