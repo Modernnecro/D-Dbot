@@ -52,6 +52,7 @@ class Dungeonbot(commands.Bot):
 
 
 bot = Dungeonbot(command_prefix='!', owner_id=182905629516496897)
+bot.load_extension('SpellCog')
 
 
 def find(predicate, iterable):
@@ -64,40 +65,6 @@ def find(predicate, iterable):
 
 def win1252_to_utf8(string):
     return string.encode('windows-1252').decode('utf-8')
-
-
-@bot.command(usage='(spell name)', aliases=('spells', 'magic'))
-async def spell(ctx, *, msg=None):
-    """
-    Shows basic information on Spells.
-    """
-    if msg is None:
-        await ctx.send('Please give the name of a spell.')
-        return
-    data = requests.get('http://www.dnd5eapi.co/api/spells').json()
-
-    spell = find(lambda spell: spell['name'] == msg, data['results'])
-
-    if spell is None:
-        await ctx.send('Please use a real spell, one from the Dungeons and Dragons Player Handbook')
-    else:
-        data2 = requests.get(spell['url']).json()
-
-        descript = descript = ellipses(win1252_to_utf8(''.join(data2['desc'])), 2048)
-
-        embed = discord.Embed(
-            title=data2['name'],
-            description=descript,
-            color=0xaa44ff,
-            url='http://www.dandwiki.com/wiki/SRD:' + msg.replace(' ', '_')
-        )
-
-        if 'higher_level' in data2:
-            embed.add_field(
-                name='Higher Level',
-                value=win1252_to_utf8(' '.join(data2['higher_level']))
-            )
-        await ctx.send(embed=embed)
 
 
 @bot.command(usage='(class name)', aliases=('class', 'style'))
