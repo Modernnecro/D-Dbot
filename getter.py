@@ -10,6 +10,7 @@ from discord.ext import commands
 import discord.utils as utils
 import requests
 
+
 def ellipses(text: str, max_length: int):
     """
     Takes text as input, and returns it as long as it is less than
@@ -26,7 +27,9 @@ def ellipses(text: str, max_length: int):
     else:
         return text
 
+
 logging.basicConfig(level='INFO')
+
 
 class Dungeonbot(commands.Bot):
     def __init__(self, *args, **kwargs):
@@ -47,7 +50,9 @@ class Dungeonbot(commands.Bot):
 
         await super().change_presence(**kwargs)
 
+
 bot = Dungeonbot(command_prefix='!', owner_id=182905629516496897)
+
 
 def find(predicate, iterable):
     for element in iterable:
@@ -56,11 +61,13 @@ def find(predicate, iterable):
     # else
     return None
 
+
 def win1252_to_utf8(string):
     return string.encode('windows-1252').decode('utf-8')
 
+
 @bot.command(usage='(spell name)', aliases=('spells', 'magic'))
-async def spell(ctx, *, msg = None):
+async def spell(ctx, *, msg=None):
     """
     Shows basic information on Spells.
     """
@@ -80,7 +87,7 @@ async def spell(ctx, *, msg = None):
 
         embed = discord.Embed(
             title=data2['name'],
-            description= descript,
+            description=descript,
             color=0xaa44ff,
             url='http://www.dandwiki.com/wiki/SRD:' + msg.replace(' ', '_')
         )
@@ -92,26 +99,38 @@ async def spell(ctx, *, msg = None):
             )
         await ctx.send(embed=embed)
 
+
 @bot.command(usage='(class name)', aliases=('class', 'style'))
-async def classes(ctx, *, msg = None):
+async def classes(ctx, *, msg=None):
     """
     Shows basic info on the classes of Dungeons And Dragons
     """
-    if msg is None:
-        await ctx.send('Please give the name of a class.')
     data = requests.get('http://www.dnd5eapi.co/api/classes').json()
+
+    if msg is None:
+        classes = data['results']
+        classes = '\n'.join(sorted('• ' + style['name'] for style in classes))
+        embed = discord.Embed(
+            title='Usable classes',
+            description=classes,
+            color=0x6767ff
+        )
+        await ctx.send(embed=embed)
 
     classes = find(lambda classes: classes['name'] == msg, data['results'])
 
     if classes is None:
-        await ctx.send('Please use a real class, one from the Dungeons and Dragons Player Handbook')
+        if msg is None:
+            return
+        else:
+            await ctx.send('Please use a real class, one from the Dungeons and Dragons Player Handbook')
     else:
         data2 = requests.get(classes['url']).json()
-        #pprint.pprint(data2)
+        # pprint.pprint(data2)
 
         embed = discord.Embed(
             title=data2['name'],
-            #description=win1252_to_utf8(''.join(data2['subclasses'])),
+            # description=win1252_to_utf8(''.join(data2['subclasses'])),
             url='http://www.dandwiki.com/wiki/5e_SRD:' + msg,
             color=0x6767ff
         )
@@ -152,8 +171,9 @@ async def classes(ctx, *, msg = None):
             )
         await ctx.send(embed=embed)
 
+
 @bot.command(usage='(monster name)', aliases=('monsters', 'baddies'))
-async def monster(ctx, *, msg = None):
+async def monster(ctx, *, msg=None):
     """
     Shows basic information of Monsters of the Monster Manual.
     """
@@ -168,14 +188,14 @@ async def monster(ctx, *, msg = None):
     else:
         data2 = requests.get(monsters['url']).json()
 
-        embed=discord.Embed(
+        embed = discord.Embed(
             title=data2['name'],
             url='http://www.dandwiki.com/wiki/5e_SRD:' + msg.replace(' ', '_'),
             color=0xff7777
         )
         if 'hit_points' in data2:
             embed.add_field(
-                name='Hitpoints',
+                name='Hit points',
                 value=data2['hit_points'])
         if 'armor_class' in data2:
             embed.add_field(
@@ -211,37 +231,44 @@ async def monster(ctx, *, msg = None):
             )
         await ctx.send(embed=embed)
 
-@bot.command(usage='(condition)', aliases=('status', 'statusses'))
-async def condition(ctx, *, msg = None):
+
+@bot.command(usage='(condition)', aliases=('status', 'statuses', 'conditions'))
+async def condition(ctx, *, msg=None):
     """
     Shows what a certain condition does in Dungeons And Dragons.
     """
-    if msg is None:
-        await ctx.send('Please give the name of a condition.')
     data = requests.get('http://www.dnd5eapi.co/api/conditions').json()
+
+    if msg is None:
+        condition = data['results']
+        condition = '\n'.join(sorted('• ' + status['name'] for status in condition))
+        embed = discord.Embed(
+            title='Usable conditions    ',
+            description=condition,
+            color=0x6767ff
+        )
+        await ctx.send(embed=embed)
 
     conditions = find(lambda conditions: conditions['name'] == msg, data['results'])
 
     if conditions is None:
-        await ctx.send('Please use the name of a condition.')
+        if msg is None:
+            return
+        else:
+            await ctx.send('Please use a real class, one from the Dungeons and Dragons Player Handbook')
     else:
         data2 = requests.get(conditions['url']).json()
+        descript = data2.get('desc', ['No results'])
+        descript = '\n'.join(descript)
 
-        if 'desc' in data2:
-            descript = 'W.I.P.'
-            for element in data2['desc']:
-                descript = '\n'.join(desc['name'] for desc in descript)
-        else:
-            descript = data2['desc']
-            descript = '\n'.join(desc['name'] for desc in descript)
-
-        embed=discord.Embed(
+        embed = discord.Embed(
             title=data2['name'],
-            description= descript,
+            description=descript,
             url='http://www.dandwiki.com/wiki/' + msg.replace(' ', '_'),
             color=0x999955
         )
         await ctx.send(embed=embed)
+
 
 @bot.command(usage='x y (both are numbers)')
 async def d(ctx, sides=6, times=1):
