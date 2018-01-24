@@ -60,80 +60,37 @@ def find(predicate, iterable):
     return None
 
 
+@bot.listen()
+async def on_ready():
+    print('Ready to play.')
+
+
 def win1252_to_utf8(string):
     return string.encode('windows-1252').decode('utf-8')
 
 
-@bot.command(usage='(class name)', aliases=('class', 'style'))
-async def classes(ctx, *, msg=None):
+@bot.command(usage='(game to play here)')
+async def game(ctx, *, msg):
     """
-    Shows basic info on the classes of Dungeons And Dragons
+    A command that makes the bot "play" a game.
     """
-    data = requests.get('http://www.dnd5eapi.co/api/classes').json()
+    await bot.change_presence(game=discord.Game(name=msg))
+    await ctx.send(f'Now playing {msg}.')
 
-    if msg is None:
-        classes = data['results']
-        classes = '\n'.join(sorted('• ' + style['name'] for style in classes))
-        embed = discord.Embed(
-            title='Usable classes',
-            description=classes,
-            color=0x6767ff
-        )
-        await ctx.send(embed=embed)
 
-    classes = find(lambda classes: classes['name'] == msg, data['results'])
+@bot.command()
+async def presence(ctx, *, status_str):
+    available_statuses = {
+        'online': discord.Status.online,
+        'dnd': discord.Status.dnd,
+        'idle': discord.Status.idle,
+        'offline': discord.Status.invisible
+    }
 
-    if classes is None:
-        if msg is None:
-            return
-        else:
-            await ctx.send('Please use a real class, one from the Dungeons and Dragons Player Handbook')
+    if status_str not in available_statuses:
+        await ctx.send(f'Valid statuses are: {", ".join(available_statuses.keys())}')
     else:
-        data2 = requests.get(classes['url']).json()
-        # pprint.pprint(data2)
-
-        embed = discord.Embed(
-            title=data2['name'],
-            # description=win1252_to_utf8(''.join(data2['subclasses'])),
-            url='http://www.dandwiki.com/wiki/5e_SRD:' + msg,
-            color=0x6767ff
-        )
-        if 'hit_die' in data2:
-            embed.add_field(
-                name='Hit Die',
-                value=data2['hit_die'])
-            pass
-        if 'proficiencies' in data2:
-            proficiencies = data2['proficiencies']
-            proficiencies = '\n'.join(sorted('• ' + proficiency['name'] for proficiency in proficiencies))
-            embed.add_field(
-                name='proficiencies',
-                value=proficiencies
-            )
-            pass
-        if 'proficiency_choices' in data2:
-            proficiencies = data2['proficiency_choices']
-            from_list = proficiencies[0]['from']
-            from_list = '\n'.join('• ' + item['name'].replace('Skill: ', '') for item in from_list)
-            embed.add_field(
-                name='Skill Choices',
-                value=from_list
-            )
-        if 'saving_throws' in data2:
-            throw = data2['saving_throws']
-            throw = ', '.join(throws['name'].replace('Skill: ', '') for throws in throw)
-            embed.add_field(
-                name='Skill Choices',
-                value=throw
-            )
-        if 'subclasses' in data2:
-            subclasses = data2['subclasses']
-            subclasses = '\n'.join(sorted('• ' + subclass['name'] for subclass in subclasses))
-            embed.add_field(
-                name='Subclasses',
-                value=subclasses
-            )
-        await ctx.send(embed=embed)
+        await bot.change_presence(status=available_statuses[status_str])
 
 
 @bot.command(usage='(condition)', aliases=('status', 'statuses', 'conditions'))
