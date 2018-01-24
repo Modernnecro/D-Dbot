@@ -17,7 +17,8 @@ def find(predicate, iterable):
 
 
 def win1252_to_utf8(string):
-    return string.encode('windows-1252').decode('utf-8')
+    #changes text from Windows-1252 encoding to utf-8 encoding, ignores errors
+    return string.encode('windows-1252').decode('utf-8', errors='ignore')
 
 
 def ellipses(text: str, max_length: int):
@@ -46,8 +47,9 @@ class SpellCog:
         data = requests.get('http://www.dnd5eapi.co/api/spells').json()
         results = random.randint(1, data['count'])
         if msg is None:
+            #If no message is given, give a random spell. Only the name and description.
             data2 = requests.get('http://www.dnd5eapi.co/api/spells/'+ str(results)).json()
-            descript = descript = ellipses(win1252_to_utf8(''.join(data2['desc'])), 2048)
+            descript = descript = ellipses(win1252_to_utf8('\n\n'.join(data2['desc'])), 2048)
             embed = discord.Embed(
                 title= 'Random Spell: ' + data2['name'],
                 description=descript,
@@ -59,11 +61,13 @@ class SpellCog:
         spell = find(lambda spell: spell['name'] == msg, data['results'])
 
         if spell is None:
+            #if the spell given doesn't exist in the API, return a text
             await ctx.send('Please use a real spell, one from the Dungeons and Dragons Player Handbook')
         else:
+            #if the spell does exist, give the full information, and what it does on higher levels.
             data2 = requests.get(spell['url']).json()
 
-            descript = descript = ellipses(win1252_to_utf8(''.join(data2['desc'])), 2048)
+            descript = descript = ellipses(win1252_to_utf8('\n\n'.join(data2['desc'])), 2048)
 
             embed = discord.Embed(
                 title=data2['name'],

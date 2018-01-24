@@ -1,14 +1,10 @@
 #!/usr/bin/env python3.6
 import logging
 import random
-import asyncio
-import pprint
 
 import discord
-from discord.ext import commands
-
-import discord.utils as utils
 import requests
+from discord.ext import commands
 
 
 def ellipses(text: str, max_length: int):
@@ -53,6 +49,7 @@ class Dungeonbot(commands.Bot):
 
 bot = Dungeonbot(command_prefix='!', owner_id=182905629516496897)
 bot.load_extension('SpellCog')
+bot.load_extension('MonsterCog')
 
 
 def find(predicate, iterable):
@@ -135,66 +132,6 @@ async def classes(ctx, *, msg=None):
             embed.add_field(
                 name='Subclasses',
                 value=subclasses
-            )
-        await ctx.send(embed=embed)
-
-
-@bot.command(usage='(monster name)', aliases=('monsters', 'baddies'))
-async def monster(ctx, *, msg=None):
-    """
-    Shows basic information of Monsters of the Monster Manual.
-    """
-    if msg is None:
-        await ctx.send('Please give the name of a monster.')
-    data = requests.get('http://www.dnd5eapi.co/api/monsters').json()
-
-    monsters = find(lambda monsters: monsters['name'] == msg, data['results'])
-
-    if monsters is None:
-        await ctx.send('Please use the name of a monster.')
-    else:
-        data2 = requests.get(monsters['url']).json()
-
-        embed = discord.Embed(
-            title=data2['name'],
-            url='http://www.dandwiki.com/wiki/5e_SRD:' + msg.replace(' ', '_'),
-            color=0xff7777
-        )
-        if 'hit_points' in data2:
-            embed.add_field(
-                name='Hit points',
-                value=data2['hit_points'])
-        if 'armor_class' in data2:
-            embed.add_field(
-                name='Armor Class',
-                value=data2['armor_class']
-            )
-        if 'challenge_rating' in data2:
-            embed.add_field(
-                name='Challenge Rating',
-                value=data2['challenge_rating']
-            )
-        if 'special_abilities' in data2:
-            abilities = data2['special_abilities']
-            abilities = '\n'.join(sorted('• ' + ability['name'] for ability in abilities))
-            embed.add_field(
-                name='Special Abilities',
-                value=abilities,
-                inline=False
-            )
-        if 'actions' in data2:
-            actions = data2['actions']
-            actions = '\n'.join(sorted('• ' + action['name'] for action in actions))
-            embed.add_field(
-                name='Actions',
-                value=actions
-            )
-        if 'legendary_actions' in data2:
-            actions = data2['legendary_actions']
-            actions = '\n'.join(sorted('• ' + action['name'] for action in actions))
-            embed.add_field(
-                name='Legendary Actions',
-                value=actions
             )
         await ctx.send(embed=embed)
 
