@@ -44,8 +44,7 @@ class MonsterCog:
         results = random.randint(1, data['count'])
         if msg is None:
             # If no message is given, give a random spell. Only the name and description.
-            data2 = requests.get('http://www.dnd5eapi.co/api/spells/' + str(results)).json()
-            descript = descript = ellipses(win1252_to_utf8('\n\n'.join(data2['desc'])), 2048)
+            data2 = requests.get('http://www.dnd5eapi.co/api/monsters/' + str(results)).json()
             embed = discord.Embed(
                 title='Random Monster: ' + data2['name'],
                 description='For more information use !monster ' + data2['name'],
