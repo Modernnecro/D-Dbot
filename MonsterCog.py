@@ -56,7 +56,10 @@ class MonsterCog:
         monsters = find(lambda monsters: monsters['name'] == msg, data['results'])
 
         if monsters is None:
-            await ctx.send('Please give the name of a monster from the Monster Manual.')
+            if msg is None:
+                return
+            else:
+                await ctx.send('Please give the name of a monster from the Monster Manual.')
         else:
             data2 = requests.get(monsters['url']).json()
 

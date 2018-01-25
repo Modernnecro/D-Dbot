@@ -58,8 +58,11 @@ class SpellCog:
         spell = find(lambda spell: spell['name'] == msg, data['results'])
 
         if spell is None:
-            # if the spell given doesn't exist in the API, return a text
-            await ctx.send('Please use a real spell, one from the Dungeons and Dragons Player Handbook')
+            if msg is None:
+                return
+            else:
+                # if the spell given doesn't exist in the API, return a text
+                await ctx.send('Please use a real spell, one from the Dungeons and Dragons Player Handbook')
         else:
             # if the spell does exist, give the full information, and what it does on higher levels.
             data2 = requests.get(spell['url']).json()

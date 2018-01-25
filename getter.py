@@ -51,6 +51,7 @@ bot = Dungeonbot(command_prefix='!', owner_id=182905629516496897)
 bot.load_extension('SpellCog')
 bot.load_extension('MonsterCog')
 bot.load_extension('ClassesCog')
+bot.load_extension('EquipmentCog')
 
 
 def find(predicate, iterable):
