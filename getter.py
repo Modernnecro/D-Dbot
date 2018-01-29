@@ -1,7 +1,7 @@
 #!/usr/bin/env python3.6
 import logging
 import random
-
+import pprint
 import discord
 import requests
 from discord.ext import commands
@@ -106,7 +106,7 @@ async def condition(ctx, *, msg=None):
         condition = data['results']
         condition = '\n'.join(sorted('• ' + status['name'] for status in condition))
         embed = discord.Embed(
-            title='Usable conditions    ',
+            title='Usable conditions',
             description=condition,
             color=0x6767ff
         )
@@ -122,6 +122,7 @@ async def condition(ctx, *, msg=None):
     else:
         data2 = requests.get(conditions['url']).json()
         descript = data2.get('desc', ['No results'])
+        pprint.pprint(descript)
         descript = '\n'.join(descript)
 
         embed = discord.Embed(
