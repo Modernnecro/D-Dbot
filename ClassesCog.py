@@ -1,7 +1,7 @@
 import discord
 import requests
 from discord.ext import commands
-
+import pprint
 
 def find(predicate, iterable):
     for element in iterable:
@@ -83,7 +83,9 @@ class ClassesCog:
                 pass
             if 'proficiency_choices' in data2:
                 proficiencies = data2['proficiency_choices']
+                pprint.pprint(proficiencies)
                 from_list = proficiencies[0]['from']
+                # pprint.pprint = from_list
                 from_list = '\n'.join('• ' + item['name'].replace('Skill: ', '') for item in from_list)
                 embed.add_field(
                     name='Skill Choices',

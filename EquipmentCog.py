@@ -107,27 +107,25 @@ class EquipmentCog:
                     value=string[:-2],
                     inline=False
                 )
+            assert 'choices_to_make' in data2
             if 'choices_to_make' in data2:
                 # pprint.pprint(data2)
                 for i in range(0, data2['choices_to_make']):
                     lists = 'choice_' + str(i + 1)
                     # pprint.pprint(lists)
                     choice = data2[lists]
-                    # pprint.pprint(choice)
-                    for j in choice:
-                        from_list = choice[0]['from']
+                    pprint.pprint(choice)
+                    # assert lists in choice
+                    if lists in choice:
+                        thing = from_list['item']
+                        # pprint.pprint(thing)
+                        from_list = thing[0]['from']
                         pprint.pprint(from_list)
-                        for k in from_list:
-                            item = from_list[0]['item']
-                            # pprint.pprint(item)
-                            thing = item['name']
-                            # pprint.pprint(thing)
-                            """
-                            embed.add_field(
-                                name='Choices ' + str(i + 1),
-                                value=thing
-                            )
-                            """
+                        from_list = '\n'.join('• ' + item['name']for item in from_list)
+                        embed.add_field(
+                            name='Skill Choices',
+                            value=from_list
+                        )
             else:
                 ctx.send('This should NEVER appear.')
         await ctx.send(embed=embed)
