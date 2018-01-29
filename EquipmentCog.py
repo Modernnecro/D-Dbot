@@ -114,14 +114,16 @@ class EquipmentCog:
                     lists = 'choice_' + str(i + 1)
                     # pprint.pprint(lists)
                     choice = data2[lists]
-                    pprint.pprint(choice)
+                    # pprint.pprint(choice)
                     # assert lists in choice
-                    if lists in choice:
-                        thing = from_list['item']
-                        # pprint.pprint(thing)
-                        from_list = thing[0]['from']
+                    # pprint.pprint(len(choice))
+                    for el in choice:
+                        from_list = el['from']
                         pprint.pprint(from_list)
-                        from_list = '\n'.join('• ' + item['name']for item in from_list)
+                        # thing = from_list['item']
+                        # pprint.pprint(thing)
+                        pprint.pprint(from_list)
+                        from_list = '\n'.join('• ' + ['item']['name']for item in from_list)
                         embed.add_field(
                             name='Skill Choices',
                             value=from_list
