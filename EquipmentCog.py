@@ -107,30 +107,47 @@ class EquipmentCog:
                     value=string[:-2],
                     inline=False
                 )
+
+            data2.pop('_id')
+
+            choices = {}
+
+            for i, choice_list in enumerate(data2.values()):
+                for choice in choice_list:
+                    number_allowed = choice['choose']
+                    options = '\n'.join([
+                        '- ' + item['item']['quantity'] + 'x ' + item['item']['name']
+                        for item in choice['from']
+                    ])
+                    string = f'Pick {number_allowed} from:\n{options}'
+                    choices[f'Choice {number_allowed}'] = string
+
+            # Usage
+            for choice_title, choice_options in choices.values():
+                embed.add_field(name=choice_title, value=choice_options)
+
+            """
             assert 'choices_to_make' in data2
             if 'choices_to_make' in data2:
-                # pprint.pprint(data2)
                 for i in range(0, data2['choices_to_make']):
                     lists = 'choice_' + str(i + 1)
-                    # pprint.pprint(lists)
                     choice = data2[lists]
-                    # pprint.pprint(choice)
-                    # assert lists in choice
-                    # pprint.pprint(len(choice))
                     for el in choice:
                         from_list = el['from']
                         pprint.pprint(from_list)
-                        # thing = from_list['item']
-                        # pprint.pprint(thing)
-                        pprint.pprint(from_list)
-                        from_list = '\n'.join('• ' + ['item']['name']for item in from_list)
-                        embed.add_field(
-                            name='Skill Choices',
-                            value=from_list
-                        )
+                        for entry in from_list:
+                            item = entry['item']
+                            name = item['name']
+                            embed.add_field(
+                                name='Choice ' + str(i + 1),
+                                value=name
+                            )
             else:
-                ctx.send('This should NEVER appear.')
+                await ctx.send('This should NEVER appear.')
+            """
         await ctx.send(embed=embed)
+
+
 
 
 def setup(bot):
