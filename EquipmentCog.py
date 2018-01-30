@@ -107,47 +107,45 @@ class EquipmentCog:
                     value=string[:-2],
                     inline=False
                 )
+            raw_choices = {}
 
-            data2.pop('_id')
+            # Get the choice key-value pairs out of the dict, ignoring anything
+            # else.
+            for field in data2.keys():
+                if field.startswith('choice_'):
+                    raw_choices[field] = data2[field]
 
             choices = {}
-
-            for i, choice_list in enumerate(data2.values()):
+            for i, choice_list in enumerate(raw_choices.values()):
+                pprint.pprint(i)
+                # pprint.pprint(choice_list)
+                # pprint.pprint(raw_choices.values())
                 for choice in choice_list:
-                    number_allowed = choice['choose']
+                    # pprint.pprint(choice)
+                    # Generates a sexy list of options.
+                    # pprint.pprint(item['item']['name'])
                     options = '\n'.join([
-                        '- ' + item['item']['quantity'] + 'x ' + item['item']['name']
+                        '- ' + item['item']['name']
                         for item in choice['from']
                     ])
+                    # pprint.pprint(options)
+
+                    number_allowed = choice['choose']
+                    # pprint.pprint(number_allowed)
                     string = f'Pick {number_allowed} from:\n{options}'
-                    choices[f'Choice {number_allowed}'] = string
+                    # pprint.pprint(string)
+
+                    # Add that to the choices dict:
+
+                    # { 'Choice 1': 'sexy string', 'Choice 2': 'sexy string'}
+                    choices[f'Choice {i + 1}'] = string
+                    pprint.pprint(choices)
 
             # Usage
-            for choice_title, choice_options in choices.values():
+            for choice_title, choice_options in choices.items():
                 embed.add_field(name=choice_title, value=choice_options)
 
-            """
-            assert 'choices_to_make' in data2
-            if 'choices_to_make' in data2:
-                for i in range(0, data2['choices_to_make']):
-                    lists = 'choice_' + str(i + 1)
-                    choice = data2[lists]
-                    for el in choice:
-                        from_list = el['from']
-                        pprint.pprint(from_list)
-                        for entry in from_list:
-                            item = entry['item']
-                            name = item['name']
-                            embed.add_field(
-                                name='Choice ' + str(i + 1),
-                                value=name
-                            )
-            else:
-                await ctx.send('This should NEVER appear.')
-            """
         await ctx.send(embed=embed)
-
-
 
 
 def setup(bot):
