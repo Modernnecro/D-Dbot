@@ -45,109 +45,141 @@ def ellipses(text: str, max_length: int):
         return text
 
 
-class EquipmentCog:
-    @commands.command(usage='(class name)', aliases=('startingeq', 'equipment'))
-    async def seq(self, ctx, *, msg=None):
+class EquipmentCog:    
+    def __init__(self):
         """
-        Shows basic info on the classes of Dungeons And Dragons
+        It would make more sense to get the class list when you first
+        load the cog, and just store and reuse this info. It will make the
+        command take half the time!
         """
-        data = requests.get('http://www.dnd5eapi.co/api/startingequipment').json()
+        # This will be our class field that stores the cache
+        # For now, initialise it to an empty dict. It will map
+        # lowercase class names to their URLs.
+        self.classes = {}
 
-        if msg is None:
-            startingequipment = data['results']
-            startingequipment = '\n'.join(sorted('• ' + seq['class'] for seq in startingequipment))
-            embed = discord.Embed(
-                title='Use of of these classes as an argument:  ',
-                description=startingequipment,
-                color=0x6767ff
+        # Get the data.
+        resp = requests.get('http://www.dnd5eapi.co/api/startingequipment')
+        # syntax: `assert condition, msg to show if false'
+        assert resp.status_code == 200, f'Unexpected response {resp.reason}.'
+        data = resp.json()
+
+        # { "count": int, "results": [...] }
+        # we want to get the results
+        results = data['results']
+
+        # The results should be a list of dicts. Each dict has two keys:
+        # "class", which is a string, and "url" which is a string URL.
+        # We get the lowercase variant of the class so we can match case
+        # insensitive later
+        # [{"class": str, "url": url}, {"class": str, "url": url}]
+        for pair in results:
+            klass = pair['class'].lower()
+            url = pair['url']
+            self.classes[klass] = url
+
+    @commands.command(aliases=('startingequipment', 'startequipment'))
+    async def seq(self, ctx, *, klass=None):
+        # First attempt to find the class.
+        if klass is None:
+            return await ctx.send(
+                f'Pick from {", ".join(n for n in self.classes.keys())}')
+
+
+        try:
+            url = self.classes[klass.lower()]
+        except KeyError:
+            # Handle if the klass given is not in the cache.
+            return await ctx.send(
+                'That is not a valid class. You can pick from: '
+                + ', '.join(self.classes.keys())
             )
-            await ctx.send(embed=embed)
 
-        startingequipment = find(lambda startingequipment: startingequipment['class'] == msg, data['results'])
+        # Get the data for that class.
+        resp = requests.get(url)
+        assert resp.status_code == 200, f'Unexpected response {resp.reason}.'
+        data = resp.json()
 
-        if startingequipment is None:
-            if msg is None:
-                return
-            else:
-                await ctx.send('Please use a real class, one from the Dungeons and Dragons Player Handbook')
-        else:
-            data2 = requests.get(startingequipment['url']).json()
-            # pprint.pprint(data2)
-            style = data2['class']
+        '''
+        Data will be the following:
+        {
+            "_id": int,
+            "index": int,
+            "starting_equipment": [{...}, {...}, {...}],
+            "choices_to_make": int,
+            "choice_1": [{...}, {...}, {...}],
+            ...
+            "choice_n": [{...}, {...}, {...}],
+            "url": str,
+            "name": str
+        }
+        We want to get the starting equipment first.
+        '''
 
-            embed = discord.Embed(
-                title='Equipment for ' + style['name'],
-                url='http://www.dandwiki.com/wiki/5e_SRD:' + msg,
-                color=0x6767ff
+        # Each dict in the list has the format:
+        # {"quantity": int, "item": {"name": str, "url": str}}
+        # We are only concerned with the name bit.
+        starting_equipment = data['starting_equipment']
+        # This will now be a list of name strings.
+        starting_equipment = [it['item']['name'] for it in starting_equipment]
+
+        # Get the number of choices to make
+        choices_to_make = data['choices_to_make']
+
+        # I am going to generate the keys now just to get it out the way
+        # and keep the rest of the logic tidy.
+        choice_keys = [f'choice_{i + 1}' for i in range(0, choices_to_make)]
+
+        '''
+        Choices have the following structure:
+        {
+            "from": [
+                {
+                    "quantity": int,
+                    "item": {
+                        "name": str,
+                        "url": str,
+                    }
+                },
+                ...
+            ],
+            "type": str,
+            "choose": int
+        }
+        We just want each item's name, and the choose field to tell us how many
+        we are allowed to choose.
+        '''
+        # We will simplify this info to make a list of pairs of:
+        #     number, [list of item names]
+        options = []
+
+        for choice_key in choice_keys:
+            # Each choice key has a list of choice objects            
+            for choice in data[choice_key]:
+                # Number to choose
+                number = choice['choose']
+                items = (it['item']['name'] for it in choice['from'])
+
+                # Tuples work exactly the same way as lists. The only difference
+                # is that you cannot edit them once you have made them.
+                pair = (number, items)
+                options.append(pair)
+
+
+        embed = discord.Embed(
+            # Capitalise each word.
+            title=klass.title(),
+            description=f'You start with {", ".join(starting_equipment)}\n\n'
+                        'You have the following options:',
+            colour=0x54c571)
+
+        for number, items in options:
+            embed.add_field(
+                name=f'Pick {number} from',
+                # Appends a bullet point onto each one
+                # I just have substring'ed the first 1024 characters
+                # as that is the character limit, and it saves errors later.
+                value='\n'.join(f'• {item}' for item in items)[:1024]
             )
-            if 'starting_equipment' in data2:
-                seq = data2['starting_equipment']
-                # pprint.pprint(seq)
-                string = ''
-                for item in seq:
-                    quantity = item['quantity']
-                    thing = item['item']
-                    stuff = thing['name']
-                    data3 = requests.get(thing['url']).json()
-                    # pprint.pprint(data3)
-                    armor = data3['equipment_category']
-                    if str(armor) == 'Armor':
-                        if quantity == 1:
-                            string += str(quantity) + ' ' + stuff + ' Armor, '
-                        else:
-                            string += str(quantity) + ' Armor' + stuff + 's, '
-                    else:
-                        if quantity == 1:
-                            string += str(quantity) + ' ' + stuff + ', '
-                        else:
-                            string += str(quantity) + ' ' + stuff + 's, '
-                # pprint.pprint(string)
-                embed.add_field(
-                    name='Starting Equipment',
-                    value=string[:-2],
-                    inline=False
-                )
-            raw_choices = []
-            # print(f'111 -> {data2!r}')
-
-            # Get the choice key-value pairs out of the dict, ignoring anything
-            # else.
-            for field in data2.keys():
-                if field.startswith('choice_'):
-                    raw_choices[field] = data2[field]
-
-            choices = {}
-            for choice_list in raw_choices.values():
-                # pprint.pprint(choice_list)
-                # pprint.pprint(raw_choices.values())
-                for i, choice in enumerate(choice_list):
-                    # pprint.pprint(i)
-                    # pprint.pprint(choice)
-                    # Generates a sexy list of options.
-                    # pprint.pprint(item['item']['name'])
-                    # print(f'126 {i} -> {choice["from"]!r}')
-                    options = '\n'.join(['- ' + item['item']['name'] for item in choice['from']])
-                    # pprint.pprint(options)
-
-                    number_allowed = choice['choose']
-                    # pprint.pprint(number_allowed)
-                    string = f'Pick {number_allowed} from:\n{options}'
-                    # pprint.pprint(string)
-
-                    # Add that to the choices dict:
-
-                    # { 'Choice 1': 'sexy string', 'Choice 2': 'sexy string'}
-                    choices[f'Choice {i + 1}'] = string
-                    # print(f'137: {i} -> {string!r}', end='\n\n')
-                    # pprint.pprint(choices)
-                    # print(repr(choices))
-
-            # Usage
-            for choice_title, choice_options in choices.items():
-                # pprint.pprint(choices.items())
-                # pprint.pprint(choice_title)
-                # pprint.pprint(choice_options)
-                embed.add_field(name=choice_title, value=choice_options)
 
         await ctx.send(embed=embed)
 
