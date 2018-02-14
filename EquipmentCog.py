@@ -107,8 +107,7 @@ class EquipmentCog:
                     value=string[:-2],
                     inline=False
                 )
-            raw_choices = []
-            # print(f'111 -> {data2!r}')
+            raw_choices = {}
 
             # Get the choice key-value pairs out of the dict, ignoring anything
             # else.
@@ -116,38 +115,26 @@ class EquipmentCog:
                 if field.startswith('choice_'):
                     raw_choices[field] = data2[field]
 
-            choices = {}
+            all_choices = []
             for choice_list in raw_choices.values():
-                # pprint.pprint(choice_list)
-                # pprint.pprint(raw_choices.values())
+                choices = {}
                 for i, choice in enumerate(choice_list):
-                    # pprint.pprint(i)
-                    # pprint.pprint(choice)
                     # Generates a sexy list of options.
-                    # pprint.pprint(item['item']['name'])
-                    # print(f'126 {i} -> {choice["from"]!r}')
                     options = '\n'.join(['- ' + item['item']['name'] for item in choice['from']])
-                    # pprint.pprint(options)
-
                     number_allowed = choice['choose']
-                    # pprint.pprint(number_allowed)
                     string = f'Pick {number_allowed} from:\n{options}'
-                    # pprint.pprint(string)
 
                     # Add that to the choices dict:
 
                     # { 'Choice 1': 'sexy string', 'Choice 2': 'sexy string'}
                     choices[f'Choice {i + 1}'] = string
-                    # print(f'137: {i} -> {string!r}', end='\n\n')
-                    # pprint.pprint(choices)
-                    # print(repr(choices))
+                    all_choices.append(choices)
+            print(repr(all_choices))
 
             # Usage
-            for choice_title, choice_options in choices.items():
-                # pprint.pprint(choices.items())
-                # pprint.pprint(choice_title)
-                # pprint.pprint(choice_options)
-                embed.add_field(name=choice_title, value=choice_options)
+            for choices in all_choices:
+                for k, v in choices.items():
+                    embed.add_field(name=k, value=v)
 
         await ctx.send(embed=embed)
 
